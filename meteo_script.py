@@ -10,10 +10,40 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email import encoders
 
+# -----------------------------
+# LOGGING
+# -----------------------------
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+
+# -----------------------------
+# MAPPATURA WEATHER CODE
+# -----------------------------
+WEATHER_CODE_MAP = {
+    0: "Sereno",
+    1: "Prevalentemente sereno",
+    2: "Parzialmente nuvoloso",
+    3: "Coperto",
+    45: "Nebbia",
+    48: "Nebbia con brina",
+    51: "Pioviggine leggera",
+    53: "Pioviggine",
+    55: "Pioviggine intensa",
+    61: "Pioggia leggera",
+    63: "Pioggia",
+    65: "Pioggia intensa",
+    71: "Neve leggera",
+    73: "Neve",
+    75: "Neve intensa",
+    80: "Rovesci leggeri",
+    81: "Rovesci",
+    82: "Rovesci intensi",
+    95: "Temporale",
+    96: "Temporale con grandine",
+    99: "Temporale forte con grandine"
+}
 
 # -----------------------------
 # FUNZIONE: Recupero dati meteo
@@ -23,7 +53,7 @@ def get_weather_data():
     url = (
         f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}"
         f"&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,"
-        f"precipitation,wind_speed_10m&wind_speed_unit=kn&timezone=Europe%2FRome"
+        f"precipitation,wind_speed_10m,weathercode&wind_speed_unit=kn&timezone=Europe%2FRome"
     )
 
     try:
@@ -34,7 +64,8 @@ def get_weather_data():
 
         required_fields = [
             "time", "temperature_2m", "relative_humidity_2m",
-            "precipitation_probability", "precipitation", "wind_speed_10m"
+            "precipitation_probability", "precipitation",
+            "wind_speed_10m", "weathercode"
         ]
 
         if "hourly" not in data or not all(f in data["hourly"] for f in required_fields):
@@ -53,7 +84,9 @@ def get_weather_data():
         if report.empty:
             raise ValueError("Nessun dato disponibile per la fascia oraria selezionata.")
 
-        report["Ora"] = report["time"].dt.strftime("%H:00")
+        report["Ora"] = report["time"].dt.strftime("%H:%M")
+        report["Descrizione"] = report["weathercode"].map(WEATHER_CODE_MAP).fillna("N/D")
+
         report = report.rename(columns={
             "temperature_2m": "Temp (°C)",
             "relative_humidity_2m": "Umidità (%)",
@@ -65,20 +98,23 @@ def get_weather_data():
         report["Temp (°C)"] = report["Temp (°C)"].round(1)
         report["Vento (Nodi)"] = report["Vento (Nodi)"].round(1)
 
-        return report[["Ora", "Temp (°C)", "Umidità (%)", "Vento (Nodi)", "Prob. Prec (%)", "Pioggia (mm)"]]
+        return report[[
+            "Ora", "Descrizione", "Temp (°C)", "Umidità (%)",
+            "Vento (Nodi)", "Prob. Prec (%)", "Pioggia (mm)"
+        ]]
 
     except Exception as e:
         logging.error(f"Errore nel recupero dati meteo: {e}")
         return None
 
-
 # -----------------------------
-# FALLBACK: dati di emergenza
+# FALLBACK
 # -----------------------------
 def fallback_weather_data():
     logging.warning("Uso fallback: dati meteo non disponibili.")
     data = {
         "Ora": ["07:00", "12:00", "18:00", "23:00"],
+        "Descrizione": ["N/D", "N/D", "N/D", "N/D"],
         "Temp (°C)": [None, None, None, None],
         "Umidità (%)": [None, None, None, None],
         "Vento (Nodi)": [None, None, None, None],
@@ -87,9 +123,8 @@ def fallback_weather_data():
     }
     return pd.DataFrame(data)
 
-
 # -----------------------------
-# GENERA GRAFICO PNG
+# GRAFICO PNG
 # -----------------------------
 def generate_plot(df):
     filename = "grafico_meteo.png"
@@ -115,7 +150,6 @@ def generate_plot(df):
     except Exception as e:
         logging.error(f"Errore nella generazione del grafico: {e}")
         return None
-
 
 # -----------------------------
 # INVIO EMAIL
@@ -176,7 +210,6 @@ def send_email(data_table, fallback=False):
         logging.info("Email inviata correttamente.")
     except Exception as e:
         logging.error(f"Errore nell'invio email: {e}")
-
 
 # -----------------------------
 # MAIN
