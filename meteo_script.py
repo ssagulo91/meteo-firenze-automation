@@ -73,14 +73,18 @@ def get_weather_data():
 
         df = pd.DataFrame(data["hourly"])
         df["time"] = pd.to_datetime(df["time"])
-
-        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
-        start = datetime.strptime(tomorrow + " 07:00", "%Y-%m-%d %H:%M")
-        end = datetime.strptime(tomorrow + " 23:00", "%Y-%m-%d %H:%M")
+        
+        # Prendo la data di oggi per mostrare le previsioni di oggi
+        oggi = datetime.now()
+        data_target = oggi.strftime("%Y-%m-%d")
+        
+        # Definisco l'inizio e la fine della finestra temporale per IL GIORNO STESSO
+        start = datetime.strptime(data_target + " 07:00", "%Y-%m-%d %H:%M")
+        end = datetime.strptime(data_target + " 23:00", "%Y-%m-%d %H:%M")
 
         mask = (df["time"] >= start) & (df["time"] <= end)
         report = df.loc[mask].copy()
-
+        
         if report.empty:
             raise ValueError("Nessun dato disponibile per la fascia oraria selezionata.")
 
