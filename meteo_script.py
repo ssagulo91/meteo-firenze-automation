@@ -166,8 +166,9 @@ def send_email(data_table, fallback=False):
     if not all([mittente, password, destinatario]):
         logging.error("Credenziali email mancanti.")
         return
-
-    data_domani = (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
+   # 27/03/26: commentato, voglio la data odierna
+   # data_domani = (datetime.now() + timedelta(days=1)).strftime("%d/%m/%Y")
+    data_oggi = datetime.now().strftime("%Y-%m-%d")
 
     msg = MIMEMultipart()
     msg["From"] = mittente
@@ -183,7 +184,7 @@ def send_email(data_table, fallback=False):
     corpo_html = f"""
     <html>
     <body>
-        <h2>Previsioni Orarie Firenze - {data_domani}</h2>
+        <h2>Previsioni Orarie Firenze - {data_oggi}</h2>
         {fallback_msg}
         {html_table}
         <br>
