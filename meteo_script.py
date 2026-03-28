@@ -173,7 +173,7 @@ def send_email(data_table, fallback=False):
     msg = MIMEMultipart()
     msg["From"] = mittente
     msg["To"] = destinatario
-    msg["Subject"] = f"Meteo Firenze: Report Orario domani {data_oggi}"
+    msg["Subject"] = f"Meteo Firenze: Report Orario oggi {data_oggi}"
 
     html_table = data_table.to_html(index=False, justify="center", border=1)
 
