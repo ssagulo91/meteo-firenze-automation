@@ -1,7 +1,7 @@
 name: Meteo Firenze - Report Giornaliero
 on:
   schedule:
-    - cron: "0 5 * * *"   # 06:00 ora italiana (CET = UTC+1)
+    - cron: "0 4 * * *"   # 06:00 ora italiana legale (CEST = UTC+2)
   workflow_dispatch:
 jobs:
   run-script:
